@@ -1,0 +1,73 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Appointment Demo</title>
+</head>
+<body>
+  <h2>Doctor Scheduler Demo</h2>
+  <div>
+    <label>Date: <input type="date" id="date" /></label>
+    <label>Type:
+      <select id="type">
+        <option>General Consultation</option>
+        <option>Follow-up</option>
+        <option>Physical Exam</option>
+        <option>Specialist Consultation</option>
+      </select>
+    </label>
+    <button id="check">Check Slots</button>
+  </div>
+  <div id="slots"></div>
+
+  <h3>Create appointment</h3>
+  <div>
+    <input id="patient" placeholder="Patient name" />
+    <input id="start" placeholder="Start (YYYY-MM-DDTHH:MM)" />
+    <select id="type2">
+      <option>General Consultation</option>
+      <option>Follow-up</option>
+      <option>Physical Exam</option>
+      <option>Specialist Consultation</option>
+    </select>
+    <button id="create">Create</button>
+  </div>
+
+  <script>
+    async function checkSlots(){
+      const date = document.getElementById('date').value;
+      const type = document.getElementById('type').value;
+      if(!date) { alert("Choose date"); return; }
+      const res = await fetch(`/api/doctor/1/available?date=${date}&appt_type=${encodeURIComponent(type)}&step_minutes=15`);
+      const j = await res.json();
+      const slotsDiv = document.getElementById('slots');
+      if(j.slots){
+        slotsDiv.innerHTML = '<ul>' + j.slots.map(s => `<li>${s.start} -> ${s.end}</li>`).join('') + '</ul>';
+      } else {
+        slotsDiv.textContent = JSON.stringify(j);
+      }
+    }
+    document.getElementById('check').onclick = checkSlots;
+
+    document.getElementById('create').onclick = async () => {
+      const patient = document.getElementById('patient').value || 'Test';
+      const start = document.getElementById('start').value;
+      const appt_type = document.getElementById('type2').value;
+      if(!start){ alert("enter start in format YYYY-MM-DDTHH:MM"); return; }
+      const res = await fetch('/api/appointments', {
+        method:'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          doctor_id: 1,
+          patient_name: patient,
+          start: start + ":00", // add seconds
+          appt_type
+        })
+      });
+      const j = await res.json();
+      alert(JSON.stringify(j));
+    }
+  </script>
+</body>
+</html>
